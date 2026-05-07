@@ -19,8 +19,23 @@
         th { padding: 10px 5px; color: #64748b; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #f1f5f9; text-align: center; }
         td { padding: 12px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; font-size: 0.85rem; }
         .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; color: white; display: inline-block; }
-        .badge-duble { background: #000; color: #ff00ea; box-shadow: 0 0 8px rgba(255, 0, 234, 0.4); }
         .badge-prenses { background: var(--princess); }
+
+        /* NEON DUBLE PRENSES EFEKTİ */
+        @keyframes neon-glow {
+            0% { box-shadow: 0 0 5px #ff00ea, 0 0 10px #ff00ea; text-shadow: 0 0 5px #fff; }
+            50% { box-shadow: 0 0 15px #ff00ea, 0 0 25px #ff00ea; text-shadow: 0 0 10px #fff; }
+            100% { box-shadow: 0 0 5px #ff00ea, 0 0 10px #ff00ea; text-shadow: 0 0 5px #fff; }
+        }
+        .badge-duble { 
+            background: #000 !important; 
+            color: #ff00ea !important; 
+            border: 1px solid #ff00ea;
+            animation: neon-glow 1.5s infinite alternate;
+            padding: 4px 10px;
+            letter-spacing: 1px;
+        }
+
         .info-box { margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 12px; border-left: 4px solid #3b82f6; font-size: 0.8rem; line-height: 1.5; }
         .admin-only { display: none; margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 12px; }
         .setup-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
@@ -68,16 +83,24 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const playerNames = ["Aykut", "Cihan", "Eser", "Mehmet", "Güngör", "Ömer"];
     let localState = null;
 
     db.ref('pisiciler_v1').on('value', (snapshot) => {
         localState = snapshot.val();
+        
+        // CİHAN, GÜNGÖR PRENSES VE MEHMET KRAL OLARAK BAŞLAT
         if(!localState) {
             localState = {
-                players: playerNames.map(n => ({name: n, score: 0, totalKral: 0, totalPrenses: 0, status: "NORMAL"})),
+                players: [
+                    {name: "Mehmet", score: 6, totalKral: 1, totalPrenses: 1, status: "NORMAL"},
+                    {name: "Aykut", score: 2, totalKral: 0, totalPrenses: 0, status: "NORMAL"},
+                    {name: "Eser", score: 2, totalKral: 0, totalPrenses: 0, status: "NORMAL"},
+                    {name: "Ömer", score: -1, totalKral: 0, totalPrenses: 0, status: "NORMAL"},
+                    {name: "Güngör", score: -4, totalKral: 0, totalPrenses: 1, status: "PRENSES"},
+                    {name: "Cihan", score: -5, totalKral: 0, totalPrenses: 1, status: "PRENSES"}
+                ],
                 history: [],
-                lastKrals: []
+                lastKrals: ["Mehmet"]
             };
             db.ref('pisiciler_v1').set(localState);
         }
@@ -94,8 +117,8 @@
         sorted.forEach(p => {
             let sTxt = `<span style="color:#cbd5e1; font-style:italic;">Sivil</span>`;
             if(p.status === "DUBLE") {
-                sTxt = `<span class="status-badge badge-duble">DUBLE PRENSES</span>`;
-                currentPrns.push(p.name + " (Duble 👸)");
+                sTxt = `<span class="status-badge badge-duble">👑 DUBLE PRENSES 👑</span>`;
+                currentPrns.push(`<span class="status-badge badge-duble" style="font-size:10px; margin-bottom:2px;">${p.name} (Duble 👸)</span>`);
             } else if(p.status === "PRENSES") {
                 sTxt = `<span class="status-badge badge-prenses">PRENSES</span>`;
                 currentPrns.push(p.name + " (👸)");
@@ -116,11 +139,12 @@
     function initForm() {
         const container = document.getElementById('entryForm');
         if(!container || container.innerHTML !== "") return;
+        const pNames = localState.players.map(p => p.name);
         for(let p=1; p<=3; p++) {
             let h = `<div style="background:white; padding:10px; border-radius:8px; border:1px solid #ddd;"><b>Parti ${p}</b><div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:5px;">`;
             for(let r=1; r<=4; r++) {
                 h += `<select id="p${p}_r${r}" style="padding:8px; font-size:12px;"><option value="">${r}. Sıra</option>`;
-                playerNames.forEach(n => h += `<option value="${n}">${n}</option>`);
+                pNames.forEach(n => h += `<option value="${n}">${n}</option>`);
                 h += `</select>`;
             }
             container.innerHTML += h + `</div></div>`;
@@ -142,7 +166,6 @@
             if(set.size !== 4) throw new Error("Tam 4 farklı oyuncu olmalı!");
         } catch(e) { return alert(e.message); }
 
-        // Geçmişi sakla (Geri al için)
         if (!localState.history) localState.history = [];
         localState.history.push(JSON.parse(JSON.stringify({players: localState.players, lastKrals: localState.lastKrals})));
 
